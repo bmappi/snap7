@@ -24,7 +24,8 @@ jobs:
     - name: Install Visual Studio Build Tools
       run: |
         # Download and install the Visual Studio Build Tools 2019
-        choco install visualstudio2019buildtools --yes
+        choco install visualstudio2019buildtools --package-parameters "--includeRecommended --add Microsoft.VisualStudio.Workload.VCTools" --yes
+        choco install visualcpp-build-tools --yes
 
     - name: Set up MSBuild
       run: |

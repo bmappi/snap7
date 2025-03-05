@@ -1,0 +1,33 @@
+name: Linux Build (x86_64)
+
+on:
+  push:
+    branches:
+      - main  # Or whichever branch you want to trigger the build on
+  pull_request:
+    branches:
+      - main  # Or whichever branch you want to trigger builds for PRs
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # Use an Ubuntu runner for Linux builds
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up build environment
+      run: |
+        # Install required dependencies for building on Linux
+        sudo apt-get update
+        sudo apt-get install -y make g++  # Ensure make and g++ are installed
+
+    - name: Build the project for x86_64_linux
+      run: |
+        echo "Building for target: x86_64_linux"
+        make -f build/unix/x86_64_linux.mk clean all
+
+    - name: Install the project for x86_64_linux
+      run: |
+        echo "Installing for target: x86_64_linux"
+        make -f build/unix/x86_64_linux.mk install
