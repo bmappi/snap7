@@ -18,13 +18,12 @@ jobs:
         platform: [x64]             # Build for both x86 and x64 : [x86, x64]
 
     steps:
-      - name: Cache Visual Studio Build Tools
-        uses: actions/cache@v2
+      - name: Restore Visual Studio Build Tools
+        uses: actions/cache/restore@v4
         with:
-          path: C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools
-          key: ${{ runner.os }}-vs2019-buildtools-${{ hashFiles('**/*.sln') }}
-          restore-keys: |
-            ${{ runner.os }}-vs2019-buildtools-
+          path: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools"
+          key: ${{ runner.os }}-vs2019-buildtools
+      
       - name: Set up MSBuild
         run: |
           if (-not (Test-Path "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools")) {
@@ -38,6 +37,12 @@ jobs:
           echo "MSBuild Path: $env:MSBuildPath"
           echo "Add MSBuild to Path"
           $env:PATH="$env:MSBuildPath;$env:PATH"
+      
+      - name: Save Visual Studio Build Tools
+        uses: actions/cache/save@v4
+        with:
+          path: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools"
+          key: ${{ runner.os }}-vs2019-buildtools
 
   build:
     needs: setup-msbuild  # This job depends on the success of the setup-msbuild job
