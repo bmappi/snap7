@@ -1,0 +1,39 @@
+name: Snap7 Build
+
+on:
+  push:
+    branches:
+      - main  # Or whichever branch you want to trigger the build on
+  pull_request:
+    branches:
+      - main  # Or whichever branch you want to trigger builds for PRs
+
+jobs:
+  build:
+    runs-on: windows-latest  # Use a Windows runner
+
+    strategy:
+      matrix:
+        configuration: [Debug, Release]  # Build Debug and Release
+        platform: [x86, x64]             # Build for both x86 and x64
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Visual Studio Build Tools
+      uses: microsoft/setup-msbuild@v1
+      with:
+        vs-version: '2019'  # Specify your Visual Studio version
+
+    - name: Build the solution
+      run: |
+        echo "Building the solution..."
+        msbuild build/windows/VS2019/VS2019.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} /p:BuildProjectReferences=true /p:OutDir=build_output/
+    
+    - name: Build DLL in Debug and Release (x86, x64)
+      run: |
+        msbuild build/windows/VS2019/VS2019.sln /p:Configuration=Debug /p:Platform=x86 /p:OutDir=build_output/x86_debug/
+        msbuild build/windows/VS2019/VS2019.sln /p:Configuration=Release /p:Platform=x86 /p:OutDir=build_output/x86_release/
+        msbuild build/windows/VS2019/VS2019.sln /p:Configuration=Debug /p:Platform=x64 /p:OutDir=build_output/x64_debug/
+        msbuild build/windows/VS2019/VS2019.sln /p:Configuration=Release /p:Platform=x64 /p:OutDir=build_output/x64_release/

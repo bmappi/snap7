@@ -724,12 +724,14 @@ int TSnap7MicroClient::opListBlocksOfType()
         ReqParams->Head[1]=0x01;
         ReqParams->Head[2]=0x12;
 
-        if (First)
+        if (First) {
             ReqParams->Plen   =0x04;
-		else
+            ReqParams->Uk = 0x11;
+        } else {
             ReqParams->Plen   =0x08;
+            ReqParams->Uk     =0x12;
+        }
 
-        ReqParams->Uk     =0x11;
         ReqParams->Tg     =grBlocksInfo;
         ReqParams->SubFun =SFun_ListBoT;
         ReqParams->Seq    =In_Seq;
@@ -1649,7 +1651,7 @@ int TSnap7MicroClient::opReadSZL()
             ReqParamsFirst->Plen   =0x04;
             ReqParamsFirst->Uk     =0x11;
             ReqParamsFirst->Tg     =grSZL;
-            ReqParamsFirst->SubFun =SFun_ReadSZL;
+            ReqParamsFirst->SubFun =SFun_ReadSZL; //0x03
             ReqParamsFirst->Seq    =Seq_in;
             // Fill Data
             ReqDataFirst->Ret      =0xFF;

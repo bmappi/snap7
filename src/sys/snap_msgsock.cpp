@@ -509,7 +509,10 @@ bool TMsgSocket::Ping(char *Host)
 //---------------------------------------------------------------------------
 bool TMsgSocket::Ping(sockaddr_in Addr)
 {
-    return Pinger->Ping(Addr.sin_addr.s_addr, PingTimeout);
+    if (PingTimeout == 0)
+		return true;
+	else
+        return Pinger->Ping(Addr.sin_addr.s_addr, PingTimeout);
 }
 //---------------------------------------------------------------------------
 socket_t TMsgSocket::SckAccept()

@@ -25,7 +25,7 @@
 |=============================================================================*/
 #include "s7_server.h"
 #include "s7_firmware.h"
-#include <cstdint>
+#include <iostream>
 
 const byte BitMask[8] = {0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80};
 
@@ -82,7 +82,7 @@ void FillTime(PS7Time PTime)
 //------------------------------------------------------------------------------
 PS7AreaContainer::PS7AreaContainer(size_t size) : size(size) {
     area = new PS7Area[size];
-    memset(area, 0, size);
+    memset(area, 0, size * sizeof(PS7Area));
     count = 0;
     limit = 0;
 }
@@ -182,7 +182,7 @@ void PS7AreaContainer::Dispose() {
     }
     count=0;
     limit=0;
-    delete area;
+    delete [] area;
 }
 //------------------------------------------------------------------------------
 // ISO/TCP WORKER  CLASS
@@ -472,7 +472,7 @@ PS7Area TS7Worker::GetArea(byte S7Code, word index)
     case S7AreaMK : return FServer->HA[srvAreaMK];
     case S7AreaCT : return FServer->HA[srvAreaCT];
     case S7AreaTM : return FServer->HA[srvAreaTM];
-    case S7AreaDB : return FServer->DBArea->Find(index);
+    case S7AreaDB : return FServer->DBArea->Find(index); // return FServer->FindDB(index);
     default       : return NULL;
     };
 }
@@ -481,12 +481,13 @@ word TS7Worker::ReadArea(PResFunReadItem ResItemData, PReqFunReadItem ReqItemPar
      int &PDURemainder, TEv &EV)
 {
     PS7Area P;
-	word DBNum, Elements;
+	word DBNum = 0;
+	word Elements;
     longword Start, Size, ASize, AStart;
     longword *PAdd;
     byte BitIndex, ByteVal;
 	int Multiplier;
-    void *Source;
+    void *Source = NULL;
     PSnapCriticalSection pcs;
 
     P=NULL;
@@ -744,7 +745,7 @@ byte TS7Worker::WriteArea(PReqFunWriteDataItem ReqItemData, PReqFunWriteItem Req
 {
 	int Multiplier;
     PS7Area P = NULL;
-	word DBNum, Elements;
+	word DBNum{}, Elements;
     longword *PAdd;
 	PSnapCriticalSection pcs;
 	longword Start, Size, ASize, DataLen, AStart;
@@ -1254,8 +1255,8 @@ bool TS7Worker::PerformGroupProgrammer()
     PGPResData ResData;
     TS7Answer17 Answer;
     int TotalSize;
-    word evs, param2 = 0, param3 = 0, param4 = 0;
-    int dlen;
+    word evs = 0, param2 = 0, param3 = 0, param4 = 0;
+    int dlen = 0;
     byte job_id = 0;
 
     ReqParams=PGPReqParams(pbyte(PDUH_in)+ReqHeaderSize);
@@ -1324,7 +1325,7 @@ bool TS7Worker::PerformGroupProgrammer()
             item.start_address = SwapWord(item.start_address);
             byte dt_width = item.getDataTypeLength();
             byte data_length = dt_width * item.repetition_factor;
-            PS7Area memory_area;
+            PS7Area memory_area = NULL;
             pbyte memory;
             word memory_size;
 
@@ -1655,7 +1656,7 @@ bool TS7Worker::PerformGroupCyclicData()
     // total size of the answer package
     int TotalSize = 0;
 
-    word evs, param2 = 0, param3 = 0, param4 = 0;
+    word evs = 0, param2 = 0, param3 = 0, param4 = 0;
 
     RequestParams    = PGCRequestParams(pbyte(PDUH_in)+ReqHeaderSize);
     RequestData      = PGCRequestData(pbyte(PDUH_in)+ReqHeaderSize+sizeof(TGCRequestParams));
@@ -1842,7 +1843,7 @@ void TS7Worker::BLK_ListBoT(byte BlockType, bool Start, TCB &CB)
 
     int area;
     uint32_t i = 0, j = 0;
-    byte uk, blockLang;
+    byte uk = 0, blockLang = 0;
     size_t listLen;
     switch (BlockType) {
         case Block_OB:
