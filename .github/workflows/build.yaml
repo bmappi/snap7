@@ -14,8 +14,8 @@ jobs:
 
     strategy:
       matrix:
-        configuration: [Debug, Release]  # Build Debug and Release
-        platform: [x86, x64]             # Build for both x86 and x64
+        configuration: [Release]  # Build Debug and Release : [Debug, Release]
+        platform: [x64]             # Build for both x86 and x64 : [x86, x64]
 
     steps:
     - name: Checkout code
@@ -29,10 +29,10 @@ jobs:
     - name: Set up MSBuild
       run: |
         # Ensure VS2019 MSBuild is available
-        set MSBuildPath="C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin"
-        echo "MSBuild Path: %MSBuildPath%"
+        $env:MSBuildPath="C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin"
+        echo "MSBuild Path: $env:MSBuildPath"
         echo "Add MSBuild to Path"
-        set PATH=%MSBuildPath%;%PATH%
+        $env:PATH="$env:MSBuildPath;$env:PATH"
 
     - name: Build the solution
       run: |
