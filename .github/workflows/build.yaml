@@ -18,6 +18,9 @@ jobs:
         platform: [x64]             # Build for both x86 and x64 : [x86, x64]
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Restore Visual Studio Build Tools
         uses: actions/cache/restore@v4
         with:
@@ -43,19 +46,6 @@ jobs:
         with:
           path: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools"
           key: ${{ runner.os }}-vs2019-buildtools
-
-  build:
-    needs: setup-msbuild  # This job depends on the success of the setup-msbuild job
-    runs-on: windows-latest  # Use a Windows runner for the build job
-
-    strategy:
-      matrix:
-        configuration: [Release]  # Build Debug and Release : [Debug, Release]
-        platform: [x64]             # Build for both x86 and x64 : [x86, x64]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
 
       - name: List Files
         run: ls -R
