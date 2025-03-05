@@ -1,4 +1,4 @@
-name: Snap7 Build
+name: C++ Build
 
 on:
   push:
@@ -21,10 +21,18 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Set up Visual Studio Build Tools
-      uses: microsoft/setup-msbuild@v1
-      with:
-        vs-version: '2019'  # Specify your Visual Studio version
+    - name: Install Visual Studio Build Tools
+      run: |
+        # Download and install the Visual Studio Build Tools 2019
+        choco install visualstudio2019buildtools --version 16.11.0 --yes
+
+    - name: Set up MSBuild
+      run: |
+        # Ensure VS2019 MSBuild is available
+        set MSBuildPath="C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin"
+        echo "MSBuild Path: %MSBuildPath%"
+        echo "Add MSBuild to Path"
+        set PATH=%MSBuildPath%;%PATH%
 
     - name: Build the solution
       run: |
