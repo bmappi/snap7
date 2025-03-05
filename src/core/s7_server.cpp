@@ -32,24 +32,50 @@ const byte BitMask[8] = {0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80};
 //---------------------------------------------------------------------------
 void FillTime(PS7Time PTime)
 {
-    time_t Now;
-    struct timespec ts;
-    int ms;
+    #ifdef OS_WINDOWS
+        SYSTEMTIME st;
+        FILETIME ft;
+        ULARGE_INTEGER uli;
+        int ms;
 
-    time(&Now);
-    struct tm *DT = localtime(&Now);
+        // Get the current system time
+        GetSystemTime(&st);
 
-    clock_gettime(CLOCK_REALTIME, &ts);
-    ms = ts.tv_nsec / 1000000;
+        // Get the time in milliseconds
+        GetSystemTimeAsFileTime(&ft);
+        uli.LowPart = ft.dwLowDateTime;
+        uli.HighPart = ft.dwHighDateTime;
+        ms = (int)((uli.QuadPart / 10000) % 1000); // Extract milliseconds from FILETIME
 
-    PTime->bcd_year=BCD(DT->tm_year-100);
-    PTime->bcd_mon =BCD(DT->tm_mon+1);
-    PTime->bcd_day =BCD(DT->tm_mday);
-    PTime->bcd_hour=BCD(DT->tm_hour);
-    PTime->bcd_min =BCD(DT->tm_min);
-    PTime->bcd_sec =BCD(DT->tm_sec);
-    PTime->bcd_himsec=BCD(word(ms / 10)); // first 2 ms digits, last is in dow
-    PTime->bcd_dow =BCD((ms % 10)*10 + DT->tm_wday);
+        PTime->bcd_year = BCD(st.wYear - 2000);    // Year (since Windows SYSTEMTIME uses 4-digit years)
+        PTime->bcd_mon = BCD(st.wMonth);           // Month
+        PTime->bcd_day = BCD(st.wDay);             // Day
+        PTime->bcd_hour = BCD(st.wHour);           // Hour
+        PTime->bcd_min = BCD(st.wMinute);          // Minute
+        PTime->bcd_sec = BCD(st.wSecond);          // Second
+        PTime->bcd_himsec = BCD(ms / 10);          // First 2 digits of milliseconds
+        PTime->bcd_dow = BCD(st.wDayOfWeek);      // Day of week (0=Sunday, 6=Saturday)
+
+    #else
+        time_t Now;
+        struct timespec ts;
+        int ms;
+
+        time(&Now);
+        struct tm *DT = localtime(&Now);
+
+        clock_gettime(CLOCK_REALTIME, &ts);
+        ms = ts.tv_nsec / 1000000;
+
+        PTime->bcd_year=BCD(DT->tm_year-100);
+        PTime->bcd_mon =BCD(DT->tm_mon+1);
+        PTime->bcd_day =BCD(DT->tm_mday);
+        PTime->bcd_hour=BCD(DT->tm_hour);
+        PTime->bcd_min =BCD(DT->tm_min);
+        PTime->bcd_sec =BCD(DT->tm_sec);
+        PTime->bcd_himsec=BCD(word(ms / 10)); // first 2 ms digits, last is in dow
+        PTime->bcd_dow =BCD((ms % 10)*10 + DT->tm_wday);
+    #endif
 }
 //------------------------------------------------------------------------------
 // AREA CONTAINER CLASS
@@ -1815,7 +1841,7 @@ void TS7Worker::BLK_ListBoT(byte BlockType, bool Start, TCB &CB)
     Data=PDataFunGetBot(pbyte(&CB.Answer)+ResHeaderSize17+sizeof(TResFunGetBlockInfo));
 
     int area;
-    uint i = 0, j = 0;
+    uint32_t i = 0, j = 0;
     byte uk, blockLang;
     size_t listLen;
     switch (BlockType) {
@@ -2024,7 +2050,7 @@ void TS7Worker::SZLSystemState()
  *
  * bool first: True if this packet is the first one for this SZL-answer
  * bool last : True if this packet is the last  one for this SZL-answer
- * uint dataSize: The size of the remaining data following the SZL header.
+ * uint32_t dataSize: The size of the remaining data following the SZL header.
  *
  *
  * Result: The full buffer length of the S7-PDU with all headers included.
@@ -2091,11 +2117,11 @@ uint16_t TS7Worker::SZLPrepareAnswerHeader(bool first, bool last, uint16_t dataS
     // Set DURN correctly
     if (first && last)
         SZL.ResParams->resvd = 0x0000;
-    if (first && not last)
+    if (first && ! last)
         SZL.ResParams->resvd = ( 0x01 << 8 ) | ((FServer->GetNextDURN() & 0xFF) );
-    if (not first && not last)
+    if (! first && ! last)
         SZL.ResParams->resvd = ( 0x01 << 8 ) | ((FServer->GetCurrentDURN() & 0xFF) );
-    if (not first && last)
+    if (! first && last)
         SZL.ResParams->resvd = ( 0x00 << 8 ) | ((FServer->GetCurrentDURN() & 0xFF) );
 
     return result;
@@ -2261,7 +2287,7 @@ void TS7Worker::SZLCData(int SZLID, void *P, int len)
 // dynamic diagnostic buffer
 void TS7Worker::SZL_ID0A0()
 {
-    uint items = FServer->GetDiagItemCount();
+    uint32_t items = FServer->GetDiagItemCount();
     size_t bufferSize = items * DiagItemLength;
     byte buffer[MaxDiagBufferItems * DiagItemLength];
     PS7ResSZLDataFirst ResData = PS7ResSZLDataFirst(SZL.ResData);
@@ -2270,7 +2296,7 @@ void TS7Worker::SZL_ID0A0()
     SZL.ResParams->Err  =0x0000;
     ResData->Ret = 0xFF;
     ResData->TS = TS_ResOctet;
-    ResData->DLen = SwapWord(uint(bufferSize + 8));
+    ResData->DLen = SwapWord(uint32_t(bufferSize + 8));
     ResData->ID = 0xA000;
     ResData->Index = 0x0000;
     ResData->ListLen = SwapWord(DiagItemLength);
@@ -2719,7 +2745,7 @@ bool TS7Worker::PerformGroupSZL()
 {
   SZLSetup();
 
-  if (not SZLSubFuncRead()) {
+  if (! SZLSubFuncRead()) {
     return true;
   }
 
@@ -2941,7 +2967,7 @@ void TSnap7Server::AddDiagItem(pbyte Item)
     AddedDiagItemCount++;
 }
 //------------------------------------------------------------------------------
-uint TSnap7Server::GetDiagItemCount() {
+uint32_t TSnap7Server::GetDiagItemCount() {
     return AddedDiagItemCount > MaxDiagBufferItems ? MaxDiagBufferItems : AddedDiagItemCount;
 }
 //------------------------------------------------------------------------------
