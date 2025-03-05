@@ -55,7 +55,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
+      - name: List Files
+        run: ls -R
 
       - name: Build the solution using full path to MSBuild
         run: |
@@ -68,9 +71,12 @@ jobs:
           & "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\msbuild.exe" build/windows/VS2019/VS2019.sln /p:Configuration=Release /p:Platform=x86 /p:OutDir=build_output/x86_release/
           & "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\msbuild.exe" build/windows/VS2019/VS2019.sln /p:Configuration=Debug /p:Platform=x64 /p:OutDir=build_output/x64_debug/
           & "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\msbuild.exe" build/windows/VS2019/VS2019.sln /p:Configuration=Release /p:Platform=x64 /p:OutDir=build_output/x64_release/
+      
+      - name: List Files
+        run: ls -R
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v2
         with:
           name: built-dlls
-          path: build_output/
+          path: ${{ github.workspace }}/build_output
