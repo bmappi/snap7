@@ -47,9 +47,6 @@ jobs:
           path: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools"
           key: ${{ runner.os }}-vs2019-buildtools
 
-      - name: List Files
-        run: ls -R
-
       - name: Build the solution using full path to MSBuild
         run: |
           echo "Building the solution..."
@@ -62,10 +59,7 @@ jobs:
           & "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\msbuild.exe" build/windows/VS2019/VS2019.sln /p:Configuration=Debug /p:Platform=x64 /p:OutDir=build_output/x64_debug/
           & "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\msbuild.exe" build/windows/VS2019/VS2019.sln /p:Configuration=Release /p:Platform=x64 /p:OutDir=build_output/x64_release/
       
-      - name: List Files
-        run: ls -R
-
       - uses: actions/upload-artifact@v4
         with:
           name: built-win
-          path: build_output
+          path: build\windows\VS2019\build_output
