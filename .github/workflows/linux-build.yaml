@@ -25,9 +25,13 @@ jobs:
     - name: Build the project for x86_64_linux
       run: |
         echo "Building for target: x86_64_linux"
-        make -f build/unix/x86_64_linux.mk clean all
+        pwd
+        cd build/unix
+        make -f x86_64_linux.mk clean all
 
     - name: Install the project for x86_64_linux
       run: |
         echo "Installing for target: x86_64_linux"
-        make -f build/unix/x86_64_linux.mk install
+        pwd
+        cd build/unix
+        make -f x86_64_linux.mk install

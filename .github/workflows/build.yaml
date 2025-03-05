@@ -9,7 +9,7 @@ on:
       - main  # Or whichever branch you want to trigger builds for PRs
 
 jobs:
-  build:
+  setup-msbuild:
     runs-on: windows-latest  # Use a Windows runner
 
     strategy:
@@ -18,31 +18,54 @@ jobs:
         platform: [x64]             # Build for both x86 and x64 : [x86, x64]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Cache Visual Studio Build Tools
+        uses: actions/cache@v2
+        with:
+          path: C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools
+          key: ${{ runner.os }}-vs2019-buildtools-${{ hashFiles('**/*.sln') }}
+          restore-keys: |
+            ${{ runner.os }}-vs2019-buildtools-
+      - name: Set up MSBuild
+        run: |
+          if (-not (Test-Path "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools")) {
+            # If Build Tools are not found in cache, install them
+            choco install visualstudio2019buildtools --package-parameters "--includeRecommended --add Microsoft.VisualStudio.Workload.VCTools" --yes
+            choco install visualcpp-build-tools --yes
+          }
+          
+          # Ensure VS2019 MSBuild is available
+          $env:MSBuildPath="C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin"
+          echo "MSBuild Path: $env:MSBuildPath"
+          echo "Add MSBuild to Path"
+          $env:PATH="$env:MSBuildPath;$env:PATH"
 
-    - name: Install Visual Studio Build Tools
-      run: |
-        # Download and install the Visual Studio Build Tools 2019
-        choco install visualstudio2019buildtools --package-parameters "--includeRecommended --add Microsoft.VisualStudio.Workload.VCTools" --yes
-        choco install visualcpp-build-tools --yes
+  build:
+    needs: setup-msbuild  # This job depends on the success of the setup-msbuild job
+    runs-on: windows-latest  # Use a Windows runner for the build job
 
-    - name: Set up MSBuild
-      run: |
-        # Ensure VS2019 MSBuild is available
-        $env:MSBuildPath="C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin"
-        echo "MSBuild Path: $env:MSBuildPath"
-        echo "Add MSBuild to Path"
-        $env:PATH="$env:MSBuildPath;$env:PATH"
+    strategy:
+      matrix:
+        configuration: [Release]  # Build Debug and Release : [Debug, Release]
+        platform: [x64]             # Build for both x86 and x64 : [x86, x64]
 
-    - name: Build the solution using full path to MSBuild
-      run: |
-        echo "Building the solution..."
-        & "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\msbuild.exe" build/windows/VS2019/VS2019.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} /p:BuildProjectReferences=true /p:OutDir=build_output/
-    
-    - name: Build DLL in Debug and Release (x86, x64)
-      run: |
-        msbuild build/windows/VS2019/VS2019.sln /p:Configuration=Debug /p:Platform=x86 /p:OutDir=build_output/x86_debug/
-        msbuild build/windows/VS2019/VS2019.sln /p:Configuration=Release /p:Platform=x86 /p:OutDir=build_output/x86_release/
-        msbuild build/windows/VS2019/VS2019.sln /p:Configuration=Debug /p:Platform=x64 /p:OutDir=build_output/x64_debug/
-        msbuild build/windows/VS2019/VS2019.sln /p:Configuration=Release /p:Platform=x64 /p:OutDir=build_output/x64_release/
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build the solution using full path to MSBuild
+        run: |
+          echo "Building the solution..."
+          & "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\msbuild.exe" build/windows/VS2019/VS2019.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} /p:BuildProjectReferences=true /p:OutDir=build_output/
+      
+      - name: Build DLL in Debug and Release (x86, x64)
+        run: |
+          & "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\msbuild.exe" build/windows/VS2019/VS2019.sln /p:Configuration=Debug /p:Platform=x86 /p:OutDir=build_output/x86_debug/
+          & "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\msbuild.exe" build/windows/VS2019/VS2019.sln /p:Configuration=Release /p:Platform=x86 /p:OutDir=build_output/x86_release/
+          & "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\msbuild.exe" build/windows/VS2019/VS2019.sln /p:Configuration=Debug /p:Platform=x64 /p:OutDir=build_output/x64_debug/
+          & "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\msbuild.exe" build/windows/VS2019/VS2019.sln /p:Configuration=Release /p:Platform=x64 /p:OutDir=build_output/x64_release/
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: built-dlls
+          path: build_output/
