@@ -34,10 +34,10 @@ jobs:
         echo "Add MSBuild to Path"
         $env:PATH="$env:MSBuildPath;$env:PATH"
 
-    - name: Build the solution
+    - name: Build the solution using full path to MSBuild
       run: |
         echo "Building the solution..."
-        msbuild build/windows/VS2019/VS2019.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} /p:BuildProjectReferences=true /p:OutDir=build_output/
+        & "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\msbuild.exe" build/windows/VS2019/VS2019.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} /p:BuildProjectReferences=true /p:OutDir=build_output/
     
     - name: Build DLL in Debug and Release (x86, x64)
       run: |
