@@ -1,5 +1,8 @@
 release
 rich-demos
 LabVIEW
-build
+build/bin
+build/temp
 doc
+.vs
+*.suo
